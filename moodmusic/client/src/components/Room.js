@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {Grid, Button, Typography } from '@material-ui/core';
 import {Link} from 'react-router-dom';
+import CreateRoomPage from './CreateRoomPage';
 
 function Room(props) {
   const { roomCode } = useParams(); // Use the useParams hook to get the roomCode
@@ -10,7 +11,8 @@ function Room(props) {
   const initialState = {
     votesToSkip: 2,
     guestCanPause: false,
-    isHost: false
+    isHost: false,
+    showSettings: false
   };
   const [roomData, setRoomData] = useState(initialState);
 
@@ -24,12 +26,12 @@ function Room(props) {
         return res.json()
       })
       .then(data => {
-        setRoomData({
-          ...roomData, 
+        setRoomData(prevState => ({
+          ...prevState, 
           votesToSkip: data.votes_to_skip,
           guestCanPause: data.guest_can_pause,
           isHost: data.is_host,
-        });
+        }));
       });
   }, [roomCode, setRoomData]); // It renders when the object changes. If we use roomData and/or roomCode then it rerenders infinite times.
 
@@ -46,6 +48,48 @@ function Room(props) {
     });
   }
 
+  function updateShowSettings(value){
+    setRoomData(prevState =>({
+       ...prevState,
+        showSettings: value,
+    }));
+  }
+
+  function renderSettings(){
+    return(
+      <Grid container spacing={1}>
+        <Grid item xs={12} align="center">
+          <CreateRoomPage 
+            update={true} 
+            votesToSkip={roomData.votesToSkip} 
+            guestCanPause={roomData.guestCanPause} 
+            roomCode={roomData.roomCode}
+            updateCallBack={null}
+            />
+        </Grid>
+        <Grid item xs={12} align="center">
+          <Button variant="contained" color='primary' onClick={() => updateShowSettings(false)}>
+            Close
+          </Button>
+        </Grid>
+      </Grid>
+    )
+  }
+
+  function renderSettingsButton(){
+    // we only want to show the settings button if user is the host
+    return(
+      <Grid item xs={12} align="center">
+        <Button variant="contained" color="primary" onClick={() => updateShowSettings(true)}>
+          Settings
+        </Button>
+      </Grid>
+    )
+  }
+
+  if (roomData.showSettings) {
+    return renderSettings();
+  }
   return (
     <Grid container spacing={1}>
       <Grid item xs={12} align="center">
@@ -68,6 +112,7 @@ function Room(props) {
           Host: {String(roomData.isHost)}
         </Typography>
       </Grid>
+      {roomData.isHost ? renderSettingsButton() : null}
       <Grid item xs={12} align="center">
         <Button color="primary" variant="contained" onClick={leaveButtonPressed}>
           Leave Room
